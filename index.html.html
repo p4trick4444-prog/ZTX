@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>朕天下專屬</title>
+
+<style>
+body{
+    margin:0;
+    padding:0 10px 90px;
+    background:#000;
+    color:#fff;
+    font-family:"Microsoft JhengHei",Arial
+}
+#bgCanvas{position:fixed;inset:0;z-index:-2}
+
+/* Header */
+.header{
+    position:fixed;
+    top:6px;
+    left:0;
+    right:0;
+    z-index:999;
+    pointer-events:none
+}
+.logo{
+    position:absolute;
+    animation:float 3s ease-in-out infinite alternate
+}
+/* 左上 LOGO 放大 */
+#logoLeft{
+    left:8px;
+    width:190px; /* 原 150 → 放大 */
+}
+/* 右上 LOGO 移除（不顯示） */
+#logoRight{
+    display:none;
+}
+
+@keyframes float{
+    50%{transform:translateY(-4px)}
+}
+
+/* Main */
+.container{
+    max-width:420px;
+    margin:102px auto 0; /* 因 LOGO 變大，往下推一點 */
+    text-align:center
+}
+h1{
+    font-size:18px;
+    margin-bottom:10px
+}
+.toggle{
+    width:140px;
+    margin:0 auto 12px;
+    padding:8px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:bold
+}
+
+/* Loading */
+#dataPanel{
+    display:none;
+    margin-top:10px;
+    font-size:11px;
+    font-family:Consolas;
+    background:rgba(0,0,0,.6);
+    padding:10px
+}
+#progressContainer{
+    display:none;
+    width:90%;
+    height:10px;
+    margin:8px auto;
+    background:rgba(255,255,255,.2);
+    border-radius:10px
+}
+#progressBar{height:100%}
+
+/* Slots */
+.slot-container{
+    display:none;
+    grid-template-columns:1fr;
+    gap:10px;
+    margin-top:16px
+}
+.slot{
+    padding:10px 14px;
+    border-radius:12px;
+    background:rgba(0,0,0,.82);
+    display:flex;
+    justify-content:space-between;
+    font-size:14px;
+    opacity:0;
+    transform:translateY(8px);
+    transition:.35s
+}
+.slot.show{opacity:1;transform:none}
+@keyframes mega{
+    50%{transform:scale(1.06);filter:saturate(1.9)}
+}
+</style>
+</head>
+
+<body>
+<canvas id="bgCanvas"></canvas>
+
+<div class="header">
+    <img src="logo.png" class="logo" id="logoLeft">
+    <!-- 右上 logo 已移除 -->
+</div>
+
+<div class="container">
+    <h1 id="title"></h1>
+    <div class="toggle" id="toggle" onclick="switchMode()"></div>
+
+    <div id="dataPanel"></div>
+    <div id="progressContainer"><div id="progressBar"></div></div>
+    <div id="slots" class="slot-container"></div>
+</div>
+
+<script>
+/* Matrix */
+const c=bgCanvas,x=c.getContext("2d");
+let cols,drops=[],matrix="#00ff9c";
+function resize(){
+    c.width=innerWidth;
+    c.height=innerHeight;
+    cols=Math.floor(c.width/22);
+    drops=Array(cols).fill(1)
+}
+resize();onresize=resize;
+function draw(){
+    x.fillStyle="rgba(0,0,0,.18)";
+    x.fillRect(0,0,c.width,c.height);
+    x.fillStyle=matrix;
+    x.font="13px monospace";
+    drops.forEach((v,i)=>{
+        x.fillText(Math.random()>.5?"1":"0",i*22,v*22);
+        if(v*22>c.height&&Math.random()>.99)drops[i]=0;
+        drops[i]+=.25
+    });
+    requestAnimationFrame(draw)
+}
+draw();
+
+/* App */
+let mode="I";
+const titleEl=title,toggleEl=toggle,dp=dataPanel,slotsEl=slots,bar=progressBar,pc=progressContainer;
+
+function apply(){
+    titleEl.textContent="朕天下專屬｜賽特 I / II 爆分選房系統";
+    if(mode==="I"){
+        titleEl.style.color="#8dffbe";
+        toggleEl.textContent="MODE I";
+        toggleEl.style.background="linear-gradient(#3dff9f,#00995a)";
+        matrix="#00ff9c";
+        bar.style.background="linear-gradient(90deg,#3dff9f,#00995a)";
+    }else{
+        titleEl.style.color="#8adfff";
+        toggleEl.textContent="MODE II";
+        toggleEl.style.background="linear-gradient(#2bbcff,#0062aa)";
+        matrix="#00c8ff";
+        bar.style.background="linear-gradient(90deg,#00c8ff,#003a66)";
+    }
+}
+
+async function fakeLoad(){
+    dp.style.display=pc.style.display="block";
+    dp.innerHTML="";
+    bar.style.width="0%";
+    for(let t of["Initializing...","Calculating...","Predicting..."]){
+        let d=document.createElement("div");
+        dp.appendChild(d);
+        let p=0;
+        await new Promise(r=>(function s(){
+            p+=Math.random()*7;
+            if(p>100)p=100;
+            d.textContent=t+" ("+(p|0)+"%)";
+            bar.style.width=p+"%";
+            p<100?requestAnimationFrame(s):setTimeout(r,120)
+        })());
+    }
+}
+
+function gen(){
+    let a=[];
+    for(let i=0;i<2;i++)a.push({t:"top",p:88+Math.random()*6|0});
+    for(let i=0;i<6;i++)a.push({t:"n",p:55+Math.random()*25|0});
+    return a.sort(()=>Math.random()-.5)
+}
+
+async function refresh(){
+    slotsEl.style.display="none";
+    await fakeLoad();
+    dp.style.display=pc.style.display="none";
+    slotsEl.innerHTML="";
+    slotsEl.style.display="grid";
+    gen().forEach((d,i)=>{
+        let s=document.createElement("div");
+        s.className="slot";
+        if(d.t==="top"){
+            s.style.color=matrix;
+            s.style.boxShadow="0 0 18px currentColor";
+            s.style.animation="mega 1.8s infinite"
+        }
+        s.innerHTML=`<span>第 ${Math.random()*3000|0} 房</span><span>${d.p}%</span>`;
+        slotsEl.appendChild(s);
+        setTimeout(()=>s.classList.add("show"),i*60)
+    });
+}
+
+function switchMode(){
+    mode=mode==="I"?"II":"I";
+    apply();
+    refresh()
+}
+apply();
+refresh();
+</script>
+</body>
+</html>
