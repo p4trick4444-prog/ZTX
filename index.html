@@ -28,15 +28,11 @@ body{
     position:absolute;
     animation:float 3s ease-in-out infinite alternate
 }
-/* 左上 LOGO 放大 */
 #logoLeft{
     left:8px;
-    width:190px; /* 原 150 → 放大 */
+    width:190px;
 }
-/* 右上 LOGO 移除（不顯示） */
-#logoRight{
-    display:none;
-}
+#logoRight{display:none}
 
 @keyframes float{
     50%{transform:translateY(-4px)}
@@ -45,7 +41,7 @@ body{
 /* Main */
 .container{
     max-width:420px;
-    margin:102px auto 0; /* 因 LOGO 變大，往下推一點 */
+    margin:102px auto 0;
     text-align:center
 }
 h1{
@@ -58,7 +54,8 @@ h1{
     padding:8px;
     border-radius:20px;
     font-size:13px;
-    font-weight:bold
+    font-weight:bold;
+    cursor:pointer
 }
 
 /* Loading */
@@ -99,6 +96,7 @@ h1{
     transition:.35s
 }
 .slot.show{opacity:1;transform:none}
+
 @keyframes mega{
     50%{transform:scale(1.06);filter:saturate(1.9)}
 }
@@ -110,7 +108,6 @@ h1{
 
 <div class="header">
     <img src="logo.png" class="logo" id="logoLeft">
-    <!-- 右上 logo 已移除 -->
 </div>
 
 <div class="container">
@@ -123,9 +120,12 @@ h1{
 </div>
 
 <script>
-/* Matrix */
+/* =======================
+   MATRIX 背景
+======================= */
 const c=bgCanvas,x=c.getContext("2d");
 let cols,drops=[],matrix="#00ff9c";
+
 function resize(){
     c.width=innerWidth;
     c.height=innerHeight;
@@ -133,6 +133,7 @@ function resize(){
     drops=Array(cols).fill(1)
 }
 resize();onresize=resize;
+
 function draw(){
     x.fillStyle="rgba(0,0,0,.18)";
     x.fillRect(0,0,c.width,c.height);
@@ -147,7 +148,9 @@ function draw(){
 }
 draw();
 
-/* App */
+/* =======================
+   主程式
+======================= */
 let mode="I";
 const titleEl=title,toggleEl=toggle,dp=dataPanel,slotsEl=slots,bar=progressBar,pc=progressContainer;
 
@@ -186,11 +189,22 @@ async function fakeLoad(){
     }
 }
 
+/* =======================
+   🔑 不重複房號池
+======================= */
+function genRoomPool(count){
+    const pool=new Set();
+    while(pool.size<count){
+        pool.add(1+Math.random()*3000|0);
+    }
+    return [...pool];
+}
+
 function gen(){
     let a=[];
     for(let i=0;i<2;i++)a.push({t:"top",p:88+Math.random()*6|0});
     for(let i=0;i<6;i++)a.push({t:"n",p:55+Math.random()*25|0});
-    return a.sort(()=>Math.random()-.5)
+    return a.sort(()=>Math.random()-.5);
 }
 
 async function refresh(){
@@ -199,15 +213,19 @@ async function refresh(){
     dp.style.display=pc.style.display="none";
     slotsEl.innerHTML="";
     slotsEl.style.display="grid";
-    gen().forEach((d,i)=>{
+
+    const data=gen();
+    const rooms=genRoomPool(data.length);
+
+    data.forEach((d,i)=>{
         let s=document.createElement("div");
         s.className="slot";
         if(d.t==="top"){
             s.style.color=matrix;
             s.style.boxShadow="0 0 18px currentColor";
-            s.style.animation="mega 1.8s infinite"
+            s.style.animation="mega 1.8s infinite";
         }
-        s.innerHTML=`<span>第 ${Math.random()*3000|0} 房</span><span>${d.p}%</span>`;
+        s.innerHTML=`<span>第 ${rooms[i]} 房</span><span>${d.p}%</span>`;
         slotsEl.appendChild(s);
         setTimeout(()=>s.classList.add("show"),i*60)
     });
@@ -220,6 +238,35 @@ function switchMode(){
 }
 apply();
 refresh();
+
+/* =======================
+   🔒 安全層級二級
+======================= */
+document.addEventListener("contextmenu",e=>e.preventDefault());
+document.addEventListener("keydown",e=>{
+    if(
+        e.key==="F12" ||
+        (e.ctrlKey && e.shiftKey && ["I","J","C"].includes(e.key)) ||
+        (e.ctrlKey && e.key==="U")
+    ){
+        e.preventDefault();
+        return false;
+    }
+});
+
+let devOpen=false;
+const devImg=new Image();
+Object.defineProperty(devImg,'id',{
+    get(){
+        devOpen=true;
+        document.body.innerHTML=
+        "<h1 style='color:#ff4d9d;text-align:center;margin-top:40vh'>⚠ 系統鎖定 ⚠</h1>";
+    }
+});
+setInterval(()=>{
+    devOpen=false;
+    console.log(devImg);
+},1000);
 </script>
 </body>
 </html>
